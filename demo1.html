@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang='en'>
+ <head>
+  <meta charset='UTF-8'>
+  <title>魔方</title>
+  <style>
+    body{
+      margin:0;
+      background-image: linear-gradient(rgba(255, 255, 255, .1), rgba(0, 0, 0, .3));
+      background-color: rgb(0, 50, 100);
+    }
+    #juli{
+      width:10%;height:100%;
+      position: fixed;left: 0;
+      background-color: blue
+      opacity:0.5;
+    }
+    #perspective{ 
+      position: fixed;left:10%;
+      height:100%;
+      width:90%;
+      perspective:1000px;
+      perspective-origin: 50% 50%;
+      transition:perspective 5s;
+    }
+   #wrap{
+    width:100px; 
+    height:100px;
+    position:relative;
+    margin:0 auto;
+    transform-style:preserve-3D; 
+    transform:rotateX(-30deg) rotateY(-30deg)
+   }
+   #wrap a{
+    position:absolute;
+    transform-style:preserve-3D;
+   } 
+   #wrap span{
+    position:absolute;
+    width:90px;
+    height:90px;
+    line-height:90px
+   }
+   #wrap div{
+    position:absolute;
+    width:90px;
+    height:90px;
+    border:6px solid black
+    } 
+    #wrap:hover div{background:none;border:0;font:none;box-shadow:0px 0px 15px #00FA9A}
+    .wenzi  {
+      text-align: center;
+      color:#FFD300;
+      font-size: 50px;
+      text-shadow:
+        0px 0px 0 #b89800, 
+        1px -1px 0 #b39400, 
+        2px -2px 12px rgba(0, 0, 0, 0.55), 
+        3px -3px 1px rgba(0, 0, 0, 0.5)}
+    .face-1 {background:#0099ff}
+    .face-2 {background:#9900ff}
+    .face-3 {background:#99ff00}
+    .face-4 {background:#00ff99}
+    .face-5 {background:#ff0099}
+    .face-6 {background:#ff9900}
+  </style>
+  <script>
+    var doc     = document;
+    var divDom  = doc.getElementsByTagName('div');
+    var aDom    = doc.getElementsByTagName('a');
+    var spanDom = doc.getElementsByTagName('span');
+    function xz(pd){
+      switch(pd){
+        case 1:return 'rotateX(90deg)   translateZ(50px)';
+        case 2:return '                 translateZ(50px)';
+        case 3:return 'rotateY(90deg)   translateZ(50px)';
+        case 4:return 'rotateY(180deg)  translateZ(50px)';
+        case 5:return 'rotateY(-90deg)  translateZ(50px)';
+        case 6:return 'rotateX(-90deg)  translateZ(50px)';
+      }
+    }
+    function shijuchangdu(){
+      shiju = parseInt(doc.getElementById('shiju').value);
+      perspective.style.perspective=shiju+'px';
+    }
+    function weiyi(){
+      divnum  = 0;
+      anum    = 1;
+      changdu = parseInt(doc.getElementById('changdu').value);
+      xzhou = parseInt(doc.getElementById('xzhou').value);
+      yzhou = parseInt(doc.getElementById('yzhou').value);
+      zzhou = parseInt(doc.getElementById('zzhou').value);
+      for (i=-1;i<2;i++){
+        for (j=-1;j<2;j++){
+          for (k=-1;k<2;k++){
+            aDom[anum].style.transform='translateX('+i*(changdu+100+xzhou)+'px) translateY('+j*(changdu+100+yzhou)+'px) translateZ('+k*(changdu+100+zzhou)+'px)';
+            aDom[anum].style.transition ='transform  2s';
+            anum++;
+            for (l=1;l<=6;l++){
+              divDom[divnum].style.transform=xz(l);
+              divDom[divnum].style.transition ='transform  2s';
+              divnum++;
+            };
+          };
+        };
+      };
+    }
+    var arr = new Array();
+    x=1;y=0;z=1;n=1;
+    for(i=0;i<3;i++){   
+        for(j=0;j<3;j++){
+            for(k=0;k<3;k++){
+                arr[9*x+3*y+1*z]=n++;  
+                y=(y+2)%3;
+                z=(z+1)%3;
+            }
+            x=(x+1)%3;
+            y=(y+2)%3;
+        }
+        x=(x+2)%3;
+        z=(z+2)%3;
+    }
+  </script>
+ </head>
+ <body>
+    <a id='juli' style="z-index:999">
+      <input type='range' id='changdu' min='0' max='100' value='0' onmouseup='weiyi()' >
+      <input type='range' id='shiju' min='0' max='1000' value='1000' onmouseup='shijuchangdu()' >
+      <input type='range' id='xzhou' min='0' max='1000' value='0' onmouseup='weiyi()' >
+      <input type='range' id='yzhou' min='0' max='1000' value='0' onmouseup='weiyi()' >
+      <input type='range' id='zzhou' min='0' max='1000' value='0' onmouseup='weiyi()' >
+    </a>
+    <header id='perspective'  style="z-index:1">
+      <header id='wrap'>
+        <script>
+          var mm = 0;
+          for (i=-1;i<2;i++){
+            for (j=-1;j<2;j++){
+              for (k=-1;k<2;k++){
+                doc.write('<a class="qh'+i+' sx'+j+' zy'+k+'">');
+                doc.write('<span class="wenzi" >'+arr[mm]+'</span>');
+                for (l=1;l<=6;l++){
+                  doc.write('<div class="face-'+l+'"></div>');  
+                };
+                mm++;
+                doc.write('</a>');
+              };
+            };
+          };
+        </script>
+      </header>
+    </header>
+    <script type='text/javascript'>
+    window.onload =function(){
+        var perspective = doc.getElementById('perspective');
+        var wrapDom     = doc.querySelector('#wrap');
+        var wrap = doc.getElementById('wrap');
+        var lastx,lasty,nowx,nowy,changeX,changeY,roX=-10;roY=0;
+        weiyi();
+        center();
+
+
+        window.onresize = center;
+        function center(){
+            var mt = window.innerHeight*1/2-wrapDom.offsetHeight*1/2;
+            wrapDom.style.cssText = 'margin-top:'+mt+'px';
+        }
+        perspective.onmousedown = function(e){
+            clearInterval(timer)
+            var timer = null;
+            var ev = e||window.event;
+            lastx = ev.clientX;
+            lasty = ev.clientY;
+            this.onmousemove = function(e){
+                clearInterval(timer)
+                var ev = e||window.event;
+                var nowx = ev.clientX;
+                var nowy = ev.clientY;
+                changeX=nowx-lastx; 
+                changeY=nowy-lasty;
+                roY+=changeX*0.1;
+                roX-=changeY*0.1;
+                froX=-roX;
+                froY=-roY;
+                wrapDom.style.transform='rotateX('+roX+'deg) rotateY('+roY+'deg)';
+                var spannum1=0;
+                for (spannum1=0,cd1=spanDom.length;spannum1<cd1;spannum1++) {
+                    spanDom[spannum1].style.transform='rotateY('+froY+'deg) rotateX('+froX+'deg) ';
+                };
+                lastx=nowx;
+                lasty=nowy;
+            }
+            this.onmouseup = function(){           
+                this.onmousemove = null;
+                timer=setInterval(function(){    
+                    changeX*=0.95;
+                    changeY*=0.95;
+                    roY+=changeX*0.2;
+                    roX-=changeY*0.2;
+                    froX=-roX;
+                    froY=-roY;
+                    wrapDom.style.transform='rotateX('+roX+'deg) rotateY('+roY+'deg) ';
+                    var spannum2=0;
+                    for (spannum2=0,cd2=spanDom.length; spannum2<cd2;spannum2++) {
+                        spanDom[spannum2].style.transform='rotateY('+froY+'deg) rotateX('+froX+'deg) ';
+                    }  
+                },30);
+            }
+            return false;
+        }
+    }
+    </script>
+ </body>
+</html>
