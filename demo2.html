@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <style>
+        html,body{
+            width: 100%;
+            height: 100%;
+        }
+        body{margin: 0;padding:0;-moz-user-select: none;}
+        .view{
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        .tips{
+            position: relative;
+            text-align: center;
+            z-index: 999;
+        }
+        #cas{
+            position: absolute;
+            display: block;
+            top: 0;
+            left: 0;
+            right: 0;
+            margin: auto;
+            cursor: move;
+        }
+    </style>
+    <title>3d多立方体</title>
+<style charset="utf-8" type="text/css" class="firebugResetStyles">/* See license.txt for terms of usage */
+/** reset styling **/
+.firebugResetStyles {
+    z-index: 2147483646;
+    top: 0;
+    left: 0;
+    display: block;
+    border: 0 none;
+    margin: 0;
+    padding: 0;
+    outline: 0;
+    min-width: 0;
+    max-width: none;
+    min-height: 0;
+    max-height: none;
+    position: fixed;
+    transform: rotate(0deg);
+    transform-origin: 50% 50%;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent none;
+    pointer-events: none;
+    white-space: normal;
+}
+style.firebugResetStyles {
+    display: none;
+}
+.firebugBlockBackgroundColor {
+    background-color: transparent;
+}
+.firebugResetStyles:before, .firebugResetStyles:after {
+    content: "";
+}
+/**actual styling to be modified by firebug theme**/
+.firebugCanvas {
+    display: none;
+}
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+.firebugLayoutBox {
+    width: auto;
+    position: static;
+}
+.firebugLayoutBoxOffset {
+    opacity: 0.8;
+    position: fixed;
+}
+.firebugLayoutLine {
+    opacity: 0.4;
+    background-color: #000000;
+}
+.firebugLayoutLineLeft, .firebugLayoutLineRight {
+    width: 1px;
+    height: 100%;
+}
+.firebugLayoutLineTop, .firebugLayoutLineBottom {
+    width: 100%;
+    height: 1px;
+}
+.firebugLayoutLineTop {
+    margin-top: -1px;
+    border-top: 1px solid #999999;
+}
+.firebugLayoutLineRight {
+    border-right: 1px solid #999999;
+}
+.firebugLayoutLineBottom {
+    border-bottom: 1px solid #999999;
+}
+.firebugLayoutLineLeft {
+    margin-left: -1px;
+    border-left: 1px solid #999999;
+}
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+.firebugLayoutBoxParent {
+    border-top: 0 none;
+    border-right: 1px dashed #E00;
+    border-bottom: 1px dashed #E00;
+    border-left: 0 none;
+    position: fixed;
+    width: auto;
+}
+.firebugRuler{
+    position: absolute;
+}
+.firebugRulerH {
+    top: -15px;
+    left: 0;
+    width: 100%;
+    height: 14px;
+    /*background: url("") repeat-x;*/
+    border-top: 1px solid #BBBBBB;
+    border-right: 1px dashed #BBBBBB;
+    border-bottom: 1px solid #000000;
+}
+.firebugRulerV {
+    top: 0;
+    left: -15px;
+    width: 14px;
+    height: 100%;
+    /*background: url("") repeat-y;*/
+    border-left: 1px solid #BBBBBB;
+    border-right: 1px solid #000000;
+    border-bottom: 1px dashed #BBBBBB;
+}
+.overflowRulerX > .firebugRulerV {
+    left: 0;
+}
+.overflowRulerY > .firebugRulerH {
+    top: 0;
+}
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+.fbProxyElement {
+    position: fixed;
+    pointer-events: auto;
+}
+</style></head>
+<body onselectstart="return false">
+<div class="view">
+    <p class="tips">鼠标拖动立方体转动，滚动鼠标滚轮缩放~</p>
+    <canvas id="cas" width="1366" height="635">您的浏览器不支持canvas</canvas>
+</div>
+<!-- <script src="3d%E5%A4%9A%E7%AB%8B%E6%96%B9%E4%BD%93_files/stats.js"></script> -->
+<script>
+    'use strict';
+    /*var stats = new Stats();
+    stats.setMode(0);
+    stats.domElement.style.position = 'absolute';
+    stats.domElement.style.right = '0px';
+    stats.domElement.style.top = '0px';
+    document.body.appendChild( stats.domElement );*/
+    var canvas = document.getElementById("cas");
+    canvas.width = document.body.offsetWidth;
+    canvas.height = document.body.offsetHeight;
+    var ctx = canvas.getContext("2d");
+    var fallLength = 1000 ,//全局变量放开头
+        centerX = canvas.width/2 ,
+        centerY = canvas.height/2 ,
+        cubeWidth = 100;
+    window.RAF = (function(){//浏览器刷新间隔时间同步动画帧数与兼容，放在开头
+        return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function (callback) {window.setTimeout(callback, 1000 / 60); };
+    })();
+    class Cube{
+        constructor(opt) {
+            //存放所有点坐标
+            this.dots = [];
+            //存放面
+            this.faces = [];
+            this.init(opt);
+        }
+        init(opt){
+            this.xpos = opt.x;
+            this.ypos = opt.y;
+            this.zpos = opt.z;
+            this.w = opt.w;
+            for(var i=0;i<8;i++){
+                this.dots.push({x:0,y:0,z:0})//新建8个空间点
+            }
+            this.setVector();
+            var b=[[0,1,2,3],[4,5,6,7],[0,1,4,5],[2,3,6,7],[0,2,4,6],[1,3,5,7]];
+            for(let i=0;i<6;i++){
+                this.faces.push([this.dots[b[i][0]] , this.dots[b[i][1]] , this.dots[b[i][2]] , this.dots[b[i][3]]]);
+            }
+            // this.faces.push([this.dots[0] , this.dots[1] , this.dots[3] , this.dots[2]]);
+            // this.faces.push([this.dots[4] , this.dots[5] , this.dots[7] , this.dots[6]]);
+            // this.faces.push([this.dots[0] , this.dots[1] , this.dots[5] , this.dots[4]]);
+            // this.faces.push([this.dots[2] , this.dots[3] , this.dots[7] , this.dots[6]]);
+            // this.faces.push([this.dots[0] , this.dots[2] , this.dots[6] , this.dots[4]]);
+            // this.faces.push([this.dots[1] , this.dots[3] , this.dots[7] , this.dots[5]]);
+            // console.log(this.faces);
+
+        }
+        setVector(){//根据中心点xyz的空间位置计算立方体的八个点
+            var x = this.xpos,
+                y = this.ypos,
+                z = this.zpos,
+                dis = this.w / 2,
+                n,
+                a=[];
+            for(let i=0;i<8;i++){//取0~8自然数
+                for(let j=2;j>=0;j--){
+                    n=i.toString(2)>>j&1;//取自然数二进制的每一位
+                    a.push(n?n:-1)//0置换为-1，存进a数组里
+                }
+            }
+                // a=[-1,-1,-1,   0        0 1 3 2   此块与195至200行相关
+                //    -1,-1, 1,   1        4 5 7 6
+                //    -1, 1,-1,   2        0 1 5 4
+                //    -1, 1, 1,   3        2 3 7 6
+                //     1,-1,-1,   4        0 2 6 4
+                //     1,-1, 1,   5        1 3 7 5
+                //     1, 1,-1,   6
+                //     1, 1, 1];  7  //得到结果的a数组作为正负符号,与面息息相关
+            for(let i=0,num=0;i<8;i++){
+                this.dots[i].x = x +a[num++]*dis;
+                this.dots[i].y = y +a[num++]*dis;
+                this.dots[i].z = z +a[num++]*dis;
+            }
+            // console.log(this.dots);
+        }
+        move(xc, yc, zc){
+            this.xpos += xc;
+            this.ypos += yc;
+            this.zpos += zc;
+            this.dots.forEach(function(dot){
+                dot.x += xc;
+                dot.y += yc;
+                dot.z += zc;
+            })
+        }
+        rotate(angleX , angleY){
+            var xcos = Math.cos(angleX);
+            var xsin = Math.sin(angleX);
+            var ycos = Math.cos(angleY);
+            var ysin = Math.sin(angleY);
+            var x, y, z;
+            var nx, ny, nz;
+            var xa = 0, ya = 0, za = 0;
+            //计算旋转后的所有点坐标位置
+            this.dots.forEach(function(dot){
+                x = dot.x;
+                y = dot.y;
+                z = dot.z;
+                //绕X轴旋转
+                ny = y * xcos - z * xsin;
+                nz = z * xcos + y * xsin;
+                //绕Y轴旋转
+                nx = x * ycos - nz * ysin;
+                nz = nz * ycos + x * ysin;
+                dot.x = nx;
+                dot.y = ny;
+                dot.z = nz;
+                xa += nx;
+                ya += ny;
+                za += nz;
+            });
+            //更新中心点坐标
+            this.xpos = xa/this.dots.length;
+            this.ypos = ya/this.dots.length;
+            this.zpos = za/this.dots.length;
+        }
+    }
+    function drawFace(face){
+        if(!face.color){
+            face.color = "rgba(" + parseInt(getRandom(128, 255)) + "," + parseInt(getRandom(128, 255)) + "," + parseInt(getRandom(128, 255)) + ",1)";
+        }
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(get2d(face[0]).x, get2d(face[0]).y);
+        ctx.lineTo(get2d(face[1]).x, get2d(face[1]).y);
+        ctx.lineTo(get2d(face[3]).x, get2d(face[3]).y);
+        ctx.lineTo(get2d(face[2]).x, get2d(face[2]).y);
+        //画矩形需要，规律排列的三、四位调换了位置，不然根据空间坐标画出来是沙漏型
+        ctx.closePath();
+//
+//        ctx.strokeStyle = "#fff";
+//        ctx.stroke();
+        ctx.fillStyle = face.color;
+        ctx.fill();
+    }
+    function get2d(dot){
+        var scale = fallLength / (fallLength + dot.z);
+        var x = centerX + dot.x * scale;
+        var y = centerY + dot.y * scale;
+        return {x: x, y: y};
+    }
+    window.onmousewheel = function(e){//滚轮事件，火狐无效，谷歌缩小有问题
+        cubeList.forEach(function(cube){
+            var nx = cube.xpos/10;
+            var ny = cube.ypos/10;
+            var nz = cube.zpos/10;
+            nx = e.wheelDelta > 0 ? nx : -nx;
+            ny = e.wheelDelta > 0 ? ny : -ny;
+            nz = e.wheelDelta > 0 ? nz : -nz;
+            cube.move(nx, ny, nz);
+        })
+    };
+    //鼠标事件绑定
+    canvas.onmousedown = function(e){
+        var angleY,angleX;
+        e = e || window.event;
+        var x1 = e.clientX - canvas.offsetLeft - centerX;
+        var y1 = e.clientY - canvas.offsetTop - centerY;
+        var xc = 0, yc = 0;
+        var date = new Date();
+        var dc = 10000;
+        cubeList.forEach(function(cube){
+            cube.inertia = false;
+        });
+        window.onmousemove = function(e){
+            e = e || window.event;
+            var x2 = e.clientX - canvas.offsetLeft - centerX;
+            var y2 = e.clientY - canvas.offsetTop - centerY;
+            var date2 = new Date();
+            xc = x2 - x1;
+            yc = y2 - y1;
+            angleY = xc * 0.005;
+            angleX = yc * 0.005;
+            cubeList.forEach(function(cube){
+                cube.rotate(angleX, angleY);
+            });
+            x1 = x2;
+            y1 = y2;
+            date = date2;
+        };
+        window.mouseleave = window.onmouseup = function(e){
+            window.onmousemove = null;
+            var date2 = new Date();
+            var dc = (date2-date)||1;
+            cubeList.forEach(function(cube){
+                cube.inertia = true;
+                cube.toAngle = {
+                    x : yc/dc,
+                    y : xc/dc
+                };
+            });
+        }
+    };
+    /**
+     * 动画初始化
+     */
+    var cubeList = [],//魔方阵列
+        cubeFace = [],//魔方六面阵列
+        distance = 50,//魔方间距离
+        level = 3,//3阶魔方，方块数量=(阶数*2-1)的三次方
+        cube_w = 400;//魔方总宽度
+    function initAnimate(){
+        var cw = cube_w/(level*2-1);//魔方每个方块的真正宽度
+        var dis = cw + distance;//块间距
+        var minmax = (level - 1) * dis;//中间点离原点最大距离
+        var cube;
+        //三层正方体
+        for (var l1 = -minmax; l1 <= minmax; l1 += dis) {
+            for (var l2 = -minmax; l2 <= minmax; l2 += dis) {
+                for (var l3 = -minmax; l3 <= minmax; l3 += dis) {
+                    // console.log(l1);
+                    // console.log(l2);
+                    // console.log(l3);
+                    // console.log('结束');
+                    cube = new Cube({x: l1, y: l2, z: l3, w: cw});//每个中心点赋值
+                    cubeFace = cubeFace.concat(cube.faces);//面阵列连接每个方块的六个面
+                    cubeList.push(cube);//魔方阵列添加每个魔方
+                    // cube.inertia = true; //初始化是否需要旋转
+                    // cube.toAngle = {     //初始化旋转角度
+                    //     x : 2,
+                    //     y : 10
+                    // }
+                }
+            }
+        }
+        animate();
+    }
+    function animate(){
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        cubeFace.sort(function(a, b){
+            var indexa = (a[0].z + a[1].z + a[2].z + a[3].z)/4;
+            var indexb = (b[0].z + b[1].z + b[2].z + b[3].z)/4;
+            return indexb - indexa;
+        });
+        //遍历cube判断是否需要旋转
+        // cubeList.forEach(function(cube){
+        //     if(cube.inertia){
+        //         var ax = cube.toAngle.x * 0.02;
+        //         var ay = cube.toAngle.y * 0.02;
+        //         cube.toAngle.x -= ax;
+        //         cube.toAngle.y -= ay;
+        //         cube.rotate(ax, ay);
+        //     }
+        // });
+        for (let v of cubeList) {
+            if(v.inertia){
+                var ax = v.toAngle.x * 0.02;
+                var ay = v.toAngle.y * 0.02;
+                v.toAngle.x -= ax;
+                v.toAngle.y -= ay;
+                v.rotate(ax, ay);
+            }
+        }
+        for(let v of cubeFace){drawFace(v);}
+        // cubeFace.forEach(face=>drawFace(face));
+        // stats.update();//更新性能显示仪
+        RAF(animate);
+    }
+    function getRandom(a, b) {//随机颜色函数，全随机a=128,b=255
+        return Math.random() * (b - a) + a;
+    }
+    initAnimate();
+    console.log(cubeFace);
+// for(let k of cubeFace){
+//     console.log(k);
+//     // for(let v of a[k]){
+//     //     console.log(v);
+//     // }
+// }
+</script>
+</body></html>

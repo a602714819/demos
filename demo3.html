@@ -1,0 +1,754 @@
+<!DOCTYPE html>  
+<html>  
+<head>  
+    <meta charset="utf-8" />  
+    <title>Canvas绘画练习</title>  
+    <style type="text/css">
+        html,body{
+            width: 100%;
+            height: 100%;
+        }
+        body{margin: 0;padding:0;-moz-user-select: none;} 
+        h1,h5{text-align: center;}  
+        canvas  
+        {
+            float: left;  
+            /*margin-left: 15px;  */
+            overflow: hidden;
+            border-bottom : 1px solid black;  
+        }  
+        .canvas{
+            height:250px;
+            width:200px;
+            float: left;  
+            margin-left: 15px;  
+            overflow: hidden;
+            border: 1px solid black; 
+        }
+        .font{
+            float: left;
+            height:50px;
+            width:200px;
+            text-align: center;
+        }
+    </style>
+    <script>
+// stats.js - http://github.com/mrdoob/stats.js性能监控器/性能显示仪
+var Stats=function(){function f(a,e,b){a=document.createElement(a);a.id=e;a.style.cssText=b;return a}function l(a,e,b){var c=f("div",a,"padding:0 0 3px 3px;text-align:left;background:"+b),d=f("div",a+"Text","font-family:Helvetica,Arial,sans-serif;font-size:9px;font-weight:bold;line-height:15px;color:"+e);d.innerHTML=a.toUpperCase();c.appendChild(d);a=f("div",a+"Graph","width:74px;height:30px;background:"+e);c.appendChild(a);for(e=0;74>e;e++)a.appendChild(f("span","","width:1px;height:30px;float:left;opacity:0.9;background:"+b));return c}function m(a){for(var b=c.children,d=0;d<b.length;d++)b[d].style.display=d===a?"block":"none";n=a}function p(a,b){a.appendChild(a.firstChild).style.height=Math.min(30,30-30*b)+"px"}var q=self.performance&&self.performance.now?self.performance.now.bind(performance):Date.now,k=q(),r=k,t=0,n=0,c=f("div","stats","width:80px;opacity:0.9;cursor:pointer");c.addEventListener("mousedown",function(a){a.preventDefault();m(++n%c.children.length)},!1);var d=0,u=Infinity,v=0,b=l("fps","#0ff","#002"),A=b.children[0],B=b.children[1];c.appendChild(b);var g=0,w=Infinity,x=0,b=l("ms","#0f0","#020"),C=b.children[0],D=b.children[1];c.appendChild(b);if(self.performance&&self.performance.memory){var h=0,y=Infinity,z=0,b=l("mb","#f08","#201"),E=b.children[0],F=b.children[1];c.appendChild(b)}m(n);return{REVISION:14,domElement:c,setMode:m,begin:function(){k=q()},end:function(){var a=q();g=a-k;w=Math.min(w,g);x=Math.max(x,g);C.textContent=(g|0)+" MS ("+(w|0)+"-"+(x|0)+")";p(D,g/200);t++;if(a>r+1E3&&(d=Math.round(1E3*t/(a-r)),u=Math.min(u,d),v=Math.max(v,d),A.textContent=d+" FPS ("+u+"-"+v+")",p(B,d/100),r=a,t=0,void 0!==h)){var b=performance.memory.usedJSHeapSize,c=performance.memory.jsHeapSizeLimit;h=Math.round(9.54E-7*b);y=Math.min(y,h);z=Math.max(z,h);E.textContent=h+" MB ("+y+"-"+z+")";p(F,b/c)}return a},update:function(){k=this.end()}}};"object"===typeof module&&(module.exports=Stats);
+</script>
+</head>  
+<body>
+    <script>
+    var stats = new Stats();
+    stats.setMode(0);
+    stats.domElement.style.position = 'fixed';
+    stats.domElement.style.right = '0px';
+    stats.domElement.style.top = '0px';
+    document.body.appendChild( stats.domElement );
+    window.RAF = (function(){//浏览器刷新间隔时间同步动画帧数与兼容
+        return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function (callback) {window.setTimeout(callback, 1000 / 60); };
+    })();
+    cubeList =[];
+    var ctxList = [];
+    var sqrt2=Math.sqrt(2),sqrt3=Math.sqrt(3),sqrt5=Math.sqrt(5),sqrt10=Math.sqrt(10);
+    function animate(){
+        for(let ctx of ctxList){
+            ctx.clearRect(0,0,500,500);
+        }
+        for(let cubeFace of cubeList){
+            rotate(0.001,0.001,cubeFace);
+            for(let v of cubeFace){
+                if (v.length==4) {
+                    v[3].strokeStyle = "red";   
+                    // v[3].save();
+                    v[3].beginPath();
+                    v[3].moveTo(get2d(v[0]).x, get2d(v[0]).y);
+                    v[3].lineTo(get2d(v[1]).x, get2d(v[1]).y);
+                    v[3].lineTo(get2d(v[2]).x, get2d(v[2]).y);
+                    v[3].closePath();
+                    v[3].stroke();
+                }else if (v.length=5) {
+                    v[4].strokeStyle = "red";   
+                    // v[4].save();
+                    v[4].beginPath();
+                    v[4].moveTo(get2d(v[0]).x, get2d(v[0]).y);
+                    v[4].lineTo(get2d(v[1]).x, get2d(v[1]).y);
+                    v[4].lineTo(get2d(v[3]).x, get2d(v[3]).y);
+                    v[4].lineTo(get2d(v[2]).x, get2d(v[2]).y);
+                    v[4].closePath();
+                    v[4].stroke();
+                };
+            }
+        }
+        stats.update();//更新性能显示仪
+        RAF(animate);
+    }
+    function get2d(dot){
+        var x = 100 + dot.x * 1000 / (1000 + dot.z);
+        var y = 100 + dot.y * 1000 / (1000 + dot.z);
+        return {x: x, y: y};
+    }
+    function rotate(angleX , angleY ,cubeList){
+        var xcos = Math.cos(angleX);
+        var xsin = Math.sin(angleX);
+        var ycos = Math.cos(angleY);
+        var ysin = Math.sin(angleY);
+        var x, y, z, nx, ny, nz, xa = 0, ya = 0, za = 0;
+        //计算旋转后的所有点坐标位置
+        for(let cubeFace of cubeList){
+            for(let dot of cubeFace){
+                x = dot.x;
+                y = dot.y;
+                z = dot.z;
+                //绕X轴旋转
+                ny = y * xcos - z * xsin;
+                nz = z * xcos + y * xsin;
+                //绕Y轴旋转
+                nx = x * ycos - nz * ysin;
+                nz = nz * ycos + x * ysin;
+                dot.x = nx;
+                dot.y = ny;
+                dot.z = nz;
+                xa += nx;
+                ya += ny;
+                za += nz;
+            };    
+        };
+    }
+    </script> 
+    <header>  
+        <section>  
+            <h1>大家跟我一起来画画</h1>  
+        </section>  
+    </header>  
+    <fieldset>  
+        <legend>圆与圆弧arc</legend>  
+        <article>  
+            <section>
+                <div class="canvas">
+                    <canvas width="200" height="200" id="canvase_01">  
+                     您的浏览器不支持Canvas元素！  
+                    </canvas>
+                    <div class="font"></div>
+                </div>  
+                <script>
+                // canvas=$("#canvase_05").get(0);//jquery要加.get(0)
+                canvas=document.getElementById("canvase_01");
+                ctx=canvas.getContext("2d");
+                ctx.fillStyle ='red';
+                round = Math.PI/2;
+                ctx.beginPath();
+                ctx.arc(50, 50, Number(50), 0, round, true);
+                ctx.fill(); 
+                ctx.beginPath();
+                ctx.arc(150, 50, Number(50), 0, round*2, true);
+                ctx.fill(); 
+                ctx.beginPath();
+                ctx.arc(50, 150, Number(50), 0, round*3, true);
+                ctx.fill(); 
+                ctx.beginPath();
+                ctx.arc(150, 150, Number(50), 0, round*4, true);
+                ctx.fill(); 
+                </script> 
+                <div class="canvas">
+                    <canvas width="200" height="200" id="canvase_02">  
+                 您的浏览器不支持Canvas元素！  
+                    </canvas>
+                    <div class="font"></div>
+                </div>
+                <script>
+                canvas=document.getElementById("canvase_02");
+                ctx=canvas.getContext("2d");
+                ctx.fillStyle ='red';
+                round = Math.PI/2;
+                ctx.beginPath();
+                ctx.arc(50, 50, Number(50), 0, round, true);
+                ctx.arc(150, 50, Number(50), 0, round*2, true);
+                ctx.arc(50, 150, Number(50), 0, round*3, true);
+                ctx.arc(150, 150, Number(50), 0, round*4, true);
+                ctx.stroke();
+
+                </script> 
+                <div class="canvas">
+                    <canvas width="200" height="200" id="canvase_03">  
+                 您的浏览器不支持Canvas元素！  
+                    </canvas>
+                    <div class="font"></div>
+                </div> 
+                <script>
+                canvas=document.getElementById("canvase_03");
+                ctx=canvas.getContext("2d");
+                ctx.fillStyle ='red';
+                round = Math.PI/2;
+                ctx.beginPath();
+                ctx.arc(50, 50, Number(50), 0, round, true);
+                ctx.arc(150, 50, Number(50), 0, round*2, true);
+                ctx.arc(50, 150, Number(50), 0, round*3, true);
+                ctx.arc(150, 150, Number(50), 0, round*4, true);
+                ctx.fill();  
+                </script>  
+                <div class="canvas">
+                    <canvas width="200" height="200" id="canvase_04">  
+                您的浏览器不支持Canvas元素！  
+                    </canvas>
+                    <div class="font"></div>
+                </div> 
+                <script>
+                canvas=document.getElementById("canvase_04");
+                ctx=canvas.getContext("2d");
+                ctx.fillStyle ='red';
+                round = Math.PI/2;
+                ctx.beginPath();
+                ctx.arc(50, 50, Number(50), 0, round, true);
+                ctx.arc(150, 50, Number(50), 0, round*2, true);
+                ctx.arc(50, 150, Number(50), 0, round*3, true);
+                ctx.arc(150, 150, Number(50), 0, round*4, true);           
+                ctx.closePath(); 
+                ctx.stroke();
+                </script>  
+                <div class="canvas">
+                    <canvas width="200" height="200" id="canvase_05">  
+                您的浏览器不支持Canvas元素！  
+                    </canvas>
+                    <div class="font">太极生两仪</div>
+                </div> 
+                <script>
+                canvas=document.getElementById("canvase_05");
+                ctx=canvas.getContext("2d");
+                ctx.beginPath();
+                round = Math.PI/2;
+                ctx.arc(100, 150, Number(10),round,round*4, true);
+                ctx.arc(100, 150, Number(10),round*4,round, true);
+                ctx.arc(100, 50, Number(10),round,round*4, true);
+                ctx.arc(100, 50, Number(10),round*4,round, true);
+                ctx.arc(100, 100, Number(100),round*3,round, false);
+                ctx.arc(100, 150, Number(50),round,round*3, false);
+                ctx.arc(100, 50, Number(50),round,round*3, true);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.strokeStyle = "black";
+                ctx.arc(100, 100, Number(100),round*3,round, true);
+                ctx.stroke();
+                </script>   
+                <div class="canvas">
+                    <canvas width="200" height="200" id="canvase_06">  
+                您的浏览器不支持Canvas元素！  
+                    </canvas>
+                    <div class="font">中心角度画图法</div>
+                </div> 
+                <script>
+                canvas=document.getElementById("canvase_06");
+                ctx=canvas.getContext("2d");
+                round = Math.PI/2;
+                ctx.strokeStyle = "black";
+                for (var i = 0; i < 6; i++) {
+                    ctx.beginPath();
+                    ctx.arc(Math.cos((30+60*i)/180*Math.PI)*50+100,-Math.sin((30+60*i)/180*Math.PI)*50+100, Number(50),0,round*4, true); 
+                    ctx.stroke();
+                };
+                </script>  
+            </section>  
+        </article>  
+    </fieldset>
+    <fieldset>  
+        <legend>曲线arcTo</legend>  
+        <article>  
+            <section>   
+                <div class="canvas">
+                    <canvas width="200" height="200" id="canvase_07">  
+                您的浏览器不支持Canvas元素！  
+                    </canvas>
+                    <div class="font"></div>
+                </div>  
+                <script> 
+                canvas=document.getElementById("canvase_07");
+                ctx=canvas.getContext("2d");
+                ctx.strokeStyle = "black";
+                ctx.beginPath();
+                ctx.moveTo(50,50);           
+                ctx.lineTo(150,50);  
+                ctx.lineTo(50,150);  
+                ctx.stroke();
+                ctx.strokeStyle = "red";
+                ctx.beginPath();
+                ctx.moveTo(50,50);           
+                ctx.arcTo(150,50,50,150,25);
+                ctx.lineTo(50,150);  
+                ctx.stroke();
+                </script>  
+                <div class="canvas">
+                    <canvas width="200" height="200" id="canvase_08">  
+                您的浏览器不支持Canvas元素！  
+                    </canvas>
+                    <div class="font"></div>
+                </div>  
+                <script> 
+                canvas=document.getElementById("canvase_08");
+                ctx=canvas.getContext("2d");
+                ctx.beginPath();
+                ctx.moveTo(0,0);           
+                // ctx.lineTo(100,100);          
+                ctx.arcTo(100,100,0,200,50);    
+                ctx.arcTo(100,100,200,200,50);    
+                ctx.arcTo(100,100,200,0,50);    
+                ctx.arcTo(100,100,0,0,50);    
+                ctx.stroke();
+                </script>   
+                <div class="canvas">
+                    <canvas width="200" height="200" id="canvase_09">  
+                您的浏览器不支持Canvas元素！  
+                    </canvas>
+                    <div class="font">赛贝尔曲线</div>
+                </div>  
+                <script> 
+                canvas=document.getElementById("canvase_09");
+                ctx=canvas.getContext("2d");
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.bezierCurveTo(0, 0,150, 50, 150, 150);
+                ctx.stroke();
+                ctx.quadraticCurveTo(150, 200, 200, 200);
+                ctx.stroke();
+                </script>  
+                <div class="canvas">
+                    <canvas width="200" height="200" id="canvase_10">  
+                您的浏览器不支持Canvas元素！  
+                    </canvas>
+                    <div class="font">赛贝尔曲线绘制椭圆</div>
+                </div>
+                <script> 
+                //绘制椭圆  
+                function  BezierEllipse1(x, y, a, b, rotate) {  
+                    //关键是bezierCurveTo中两个控制点的设置   
+                    //0.5和0.6是两个关键系数（在本函数中为试验而得）   
+                    var ox = 0.5 * a,   
+                    oy = 0.6 * b;   
+                    var rot = rotate ? -rotate : 0;  
+                    ctx.save();   
+                    ctx.rotate(rot);  
+                    ctx.translate(x, y);   
+                    ctx.beginPath();   
+                    //从椭圆纵轴下端开始逆时针方向绘制   
+                    ctx.moveTo(0, b);   
+                    ctx.bezierCurveTo(ox, b, a, oy, a, 0);   
+                    ctx.bezierCurveTo(a, -oy, ox, -b, 0, -b);   
+                    ctx.bezierCurveTo(-ox, -b, -a, -oy, -a, 0);   
+                    ctx.bezierCurveTo(-a, oy, -ox, b, 0, b);   
+                    ctx.closePath();   
+                    ctx.stroke();   
+                    ctx.restore();   
+                }
+                canvas=document.getElementById("canvase_10");
+                ctx=canvas.getContext("2d");
+                BezierEllipse1(100, 100,40, 60 );
+                </script>
+                <div class="canvas">
+                    <canvas width="200" height="200" id="canvase_11">  
+                您的浏览器不支持Canvas元素！  
+                    </canvas>
+                    <div class="font"></div>
+                </div>  
+                <div class="canvas">
+                    <canvas width="200" height="200" id="canvase_12">  
+                您的浏览器不支持Canvas元素！  
+                    </canvas>
+                    <div class="font"></div>
+                </div>  
+            </section>  
+        </article>  
+    </fieldset>
+    <fieldset>  
+        <legend>平面几何lineTo</legend>  
+        <article>  
+            <section>   
+                <div class="canvas">
+                    <canvas width="200" height="200" id="canvase_13">  
+                您的浏览器不支持Canvas元素！  
+                    </canvas>
+                    <div class="font">正三角形</div>
+                </div>  
+                <script> 
+                canvas=document.getElementById("canvase_13");
+                ctx=canvas.getContext("2d");
+                ctx.strokeStyle = "red";   
+                ctx.beginPath();
+                for (var i = 0; i < 3; i++) {
+                    ctx.lineTo(Math.cos((90+120*i)/180*Math.PI)*50+100,-Math.sin((90+120*i)/180*Math.PI)*50+100);
+                };
+                ctx.closePath();
+                ctx.stroke();
+                </script>  
+                <div class="canvas">
+                    <canvas width="200" height="200" id="canvase_14">  
+                您的浏览器不支持Canvas元素！  
+                    </canvas>
+                    <div class="font">正五角星</div>
+                </div>  
+                <script> 
+                canvas=document.getElementById("canvase_14");
+                ctx=canvas.getContext("2d");
+                ctx.strokeStyle = "red";   
+                ctx.beginPath();
+                for (var i = 0; i < 5; i++) {
+                    ctx.lineTo(Math.cos((90+144*i)/180*Math.PI)*50+100,-Math.sin((90+144*i)/180*Math.PI)*50+100);
+                };
+                ctx.closePath();
+                ctx.stroke();
+                </script>  
+                <div class="canvas">
+                    <canvas width="200" height="200" id="canvase_15">  
+                您的浏览器不支持Canvas元素！  
+                    </canvas>
+                    <div class="font">正六边形</div>
+                </div>  
+                <script> 
+                canvas=document.getElementById("canvase_15");
+                ctx=canvas.getContext("2d");
+                ctx.strokeStyle = "red";   
+                ctx.beginPath();
+                for (var i = 0; i < 6; i++) {
+                    ctx.lineTo(Math.cos((90+60*i)/180*Math.PI)*50+100,-Math.sin((90+60*i)/180*Math.PI)*50+100);
+                };
+                ctx.closePath();
+                ctx.stroke();
+                </script>  
+                <div class="canvas">
+                    <canvas width="200" height="200" id="canvase_16">  
+                您的浏览器不支持Canvas元素！  
+                    </canvas>
+                    <div class="font"></div>
+                </div>    
+                <div class="canvas">
+                    <canvas width="200" height="200" id="canvase_17">  
+                您的浏览器不支持Canvas元素！  
+                    </canvas>
+                    <div class="font">正17角星</div>
+                </div>  
+                <script> 
+                canvas=document.getElementById("canvase_17");
+                ctx=canvas.getContext("2d");
+                ctx.strokeStyle = "red";   
+                ctx.beginPath();
+                for (var i = 0; i < 17; i++) {
+                    ctx.lineTo(Math.cos((360/17*7*i)/180*Math.PI)*100+100,-Math.sin((360/17*7*i)/180*Math.PI)*100+100);
+                };
+                ctx.closePath();
+                ctx.stroke();
+                </script>  
+                <div class="canvas">
+                    <canvas width="200" height="200" id="canvase_18">  
+                您的浏览器不支持Canvas元素！  
+                    </canvas>
+                    <div class="font">正方形</div>
+                </div>  
+                <script> 
+                canvas=document.getElementById("canvase_18");
+                ctx=canvas.getContext("2d");
+                ctx.strokeStyle = "red";   
+                ctx.beginPath();
+                for (var i = 0; i < 4; i++) {
+                    ctx.lineTo(Math.cos((90+90*i)/180*Math.PI)*50+100,-Math.sin((90+90*i)/180*Math.PI)*50+100);
+                };
+                ctx.closePath();
+                ctx.stroke();
+                </script>  
+            </section>  
+        </article>  
+    </fieldset>
+    <fieldset>  
+        <legend>立体几何</legend>  
+        <article>  
+            <section>   
+                <div class="canvas">
+                    <canvas width="200" height="200" id="canvase_19">  
+                您的浏览器不支持Canvas元素！  
+                    </canvas>
+                    <div class="font">正四面体</div>
+                </div> 
+                <script>
+                canvas=document.getElementById("canvase_19");
+                ctx=canvas.getContext("2d");
+                cube=
+                [[
+                    [
+                        {x:-50,y:-50,z:-50},
+                        {x:-50,y: 50,z: 50}, 
+                        {x: 50,y:-50,z: 50},
+                        ctx 
+                    ],
+                    [
+                        {x:-50,y:-50,z:-50},
+                        {x:-50,y: 50,z: 50},
+                        {x: 50,y: 50,z:-50},
+                        ctx 
+                    ],
+                    [
+                        {x:-50,y:-50,z:-50},
+                        {x: 50,y:-50,z: 50},
+                        {x: 50,y: 50,z:-50},
+                        ctx 
+                    ],
+                    [
+                        {x:-50,y: 50,z: 50},
+                        {x: 50,y:-50,z: 50},
+                        {x: 50,y: 50,z:-50},
+                        ctx 
+                    ]
+                ]];
+                ctxList  = ctxList.concat(ctx);
+                cubeList = cubeList.concat(cube);
+                </script> 
+                <div class="canvas">
+                    <canvas width="200" height="200" id="canvase_20">  
+                您的浏览器不支持Canvas元素！  
+                    </canvas>
+                    <div class="font">立方体</div>
+                </div> 
+                <script>
+                canvas=document.getElementById("canvase_20");
+                ctx=canvas.getContext("2d");
+                cube/*立方体*/=
+                [[
+                    [
+                        {x:-50,y:-50,z:-50},
+                        {x:-50,y:-50,z: 50},
+                        {x:-50,y: 50,z:-50},
+                        {x:-50,y: 50,z: 50},
+                        ctx 
+                    ],
+                    [   
+                        {x: 50,y:-50,z:-50},
+                        {x: 50,y:-50,z: 50},
+                        {x: 50,y: 50,z:-50},
+                        {x: 50,y: 50,z: 50},
+                        ctx
+                    ],
+                    [
+                        {x:-50,y:-50,z:-50},
+                        {x:-50,y:-50,z: 50},
+                        {x: 50,y:-50,z:-50},
+                        {x: 50,y:-50,z: 50},
+                        ctx
+                    ],
+                    [
+                        {x:-50,y: 50,z:-50},
+                        {x:-50,y: 50,z: 50},
+                        {x: 50,y: 50,z:-50},
+                        {x: 50,y: 50,z: 50},
+                        ctx
+                    ],
+                    [
+                        {x:-50,y:-50,z:-50},
+                        {x:-50,y: 50,z:-50},
+                        {x: 50,y:-50,z:-50},
+                        {x: 50,y: 50,z:-50},
+                        ctx
+                    ],
+                    [
+                        {x:-50,y:-50,z: 50},
+                        {x:-50,y: 50,z: 50},
+                        {x: 50,y:-50,z: 50},
+                        {x: 50,y: 50,z: 50},
+                        ctx
+                    ]
+                ]];
+                ctxList  = ctxList.concat(ctx);
+                cubeList = cubeList.concat(cube);
+                </script>    
+                <div class="canvas">
+                    <canvas width="200" height="200" id="canvase_21">  
+                您的浏览器不支持Canvas元素！  
+                    </canvas>
+                    <div class="font">正六面体</div>
+                </div> 
+                <script>
+                canvas=document.getElementById("canvase_21");
+                ctx=canvas.getContext("2d");
+                a=sqrt10*25,b=sqrt3*25;
+                cube=
+                [[
+                    [
+                        {x: 0,y:-a,z:  0},
+                        {x:-b,y: 0,z:-25}, 
+                        {x: b,y: 0,z:-25}, 
+                        ctx 
+                    ],
+                    [
+                        {x: 0,y:-a,z:  0},
+                        {x:-b,y: 0,z:-25},  
+                        {x: 0,y: 0,z: 50},
+                        ctx 
+                    ],
+                    [
+                        {x: 0,y:-a,z:  0}, 
+                        {x: b,y: 0,z:-25},  
+                        {x: 0,y: 0,z: 50},
+                        ctx 
+                    ],
+                    [
+                        {x: 0,y: a,z:  0},
+                        {x:-b,y: 0,z:-25}, 
+                        {x: b,y: 0,z:-25}, 
+                        ctx 
+                    ],
+                    [
+                        {x: 0,y: a,z:  0},
+                        {x:-b,y: 0,z:-25},  
+                        {x: 0,y: 0,z: 50},
+                        ctx 
+                    ],
+                    [
+                        {x: 0,y: a,z:  0}, 
+                        {x: b,y: 0,z:-25},  
+                        {x: 0,y: 0,z: 50},
+                        ctx 
+                    ]
+                ]];
+                ctxList  = ctxList.concat(ctx);
+                cubeList = cubeList.concat(cube);
+                </script>  
+                <div class="canvas">
+                    <canvas width="200" height="200" id="canvase_22">  
+                您的浏览器不支持Canvas元素！  
+                    </canvas>
+                    <div class="font">正八面体</div>
+                </div> 
+                <script>
+                canvas=document.getElementById("canvase_22");
+                ctx=canvas.getContext("2d");
+                cube=
+                [[
+                    [
+                        {x: 100,y:   0,z:   0},
+                        {x:   0,y: 100,z:   0}, 
+                        {x:   0,y:   0,z: 100},
+                        ctx 
+                    ],
+                    [
+                        {x:-100,y:   0,z:   0},
+                        {x:   0,y: 100,z:   0}, 
+                        {x:   0,y:   0,z: 100},
+                        ctx 
+                    ],
+                    [
+                        {x:-100,y:   0,z:   0},
+                        {x:   0,y: 100,z:   0}, 
+                        {x:   0,y:   0,z:-100},
+                        ctx 
+                    ],
+                    [
+                        {x: 100,y:   0,z:   0},
+                        {x:   0,y: 100,z:   0}, 
+                        {x:   0,y:   0,z:-100},
+                        ctx 
+                    ],
+                    [
+                        {x: 100,y:   0,z:   0},
+                        {x:   0,y:-100,z:   0}, 
+                        {x:   0,y:   0,z: 100},
+                        ctx 
+                    ],
+                    [
+                        {x:-100,y:   0,z:   0},
+                        {x:   0,y:-100,z:   0}, 
+                        {x:   0,y:   0,z: 100},
+                        ctx 
+                    ],
+                    [
+                        {x:-100,y:   0,z:   0},
+                        {x:   0,y:-100,z:   0}, 
+                        {x:   0,y:   0,z:-100},
+                        ctx 
+                    ],
+                    [
+                        {x: 100,y:   0,z:   0},
+                        {x:   0,y:-100,z:   0}, 
+                        {x:   0,y:   0,z:-100},
+                        ctx 
+                    ],
+                ]];
+                ctxList  = ctxList.concat(ctx);
+                cubeList = cubeList.concat(cube);
+                </script> 
+                <div class="canvas">
+                    <canvas width="200" height="200" id="canvase_23">  
+                您的浏览器不支持Canvas元素！  
+                    </canvas>
+                    <div class="font">正二十面体</div>
+                </div> 
+                <script>
+                canvas=document.getElementById("canvase_23");
+                ctx=canvas.getContext("2d");
+                cube=[[]];
+                m=100*Math.sqrt((50-10*sqrt5))/10,
+                n=100*Math.sqrt((50+10*sqrt5))/10;
+                var dot=
+                        [
+                            {x:-m,y:0,z:n},
+                            {x:m,y:0,z:n},
+                            {x:-m,y:0,z:-n},
+                            {x:m,y:0,z:-n},
+                            {x:0,y:n,z:m},
+                            {x:0,y:n,z:-m},
+                            {x:0,y:-n,z:m},
+                            {x:0,y:-n,z:-m},
+                            {x:n,y:m,z:0},
+                            {x:-n,y:m,z:0},
+                            {x:n,y:-m,z:0},
+                            {x:-n,y:-m,z:0}
+                        ];
+                b=[[0,4,1],[0,9,4],[9,5,4],[4,5,8],[4,8,1],[8,10,1],[8,3,10],[5,3,8],[5,2,3],[2,7,3],[7,10,3],[7,6,10],[7,11,6],[11,0,6],[0,1,6],[6,1,10],[9,0,11],[9,11,2],[9,2,5],[7,2,11]];
+                for(let i=0;i<20;i++){
+                    for (let v of cube) {
+                        v.push([dot[b[i][0]],dot[b[i][1]],dot[b[i][2]],ctx]);
+                    }
+                }
+                ctxList  = ctxList.concat(ctx);
+                cubeList = cubeList.concat(cube);
+                </script>    
+                <div class="canvas">
+                    <canvas width="200" height="200" id="canvase_24">  
+                您的浏览器不支持Canvas元素！  
+                    </canvas>
+                    <div class="font">自己试做失败的<br>正二十面体</div>
+                </div> 
+                <script>
+                canvas=document.getElementById("canvase_24");
+                ctx=canvas.getContext("2d");
+                dot=[],cube=[[]];
+                for (var i = 0; i < 10; i++) {
+                    dot[i]=new Object();
+                    dot[i].x=Math.cos((36*i)/180*Math.PI)*100;
+                    dot[i].y=(i%2?-1:1)*(100+Math.cos(0.8*Math.PI)*100);
+                    dot[i].z=-Math.sin((36*i)/180*Math.PI)*100;
+                };
+                dot= dot.concat({x:0,y: 100,z:0});
+                dot= dot.concat({x:0,y:-100,z:0});
+                b=[[0,2,10],[2,4,10],[4,6,10],[6,8,10],[8,0,10],[1,3,11],[3,5,11],[5,7,11],[7,9,11],[9,1,11],[0,1,2],[1,2,3],[2,3,4],[3,4,5],[4,5,6],[5,6,7],[6,7,8],[7,8,9],[8,9,0],[9,0,1]];
+                for(let i=0;i<20;i++){
+                    for (let v of cube) {
+                        v.push([dot[b[i][0]],dot[b[i][1]],dot[b[i][2]],ctx]);
+                    }
+                }
+                ctxList  = ctxList.concat(ctx);
+                cubeList = cubeList.concat(cube);
+                </script>  
+            </section>  
+        </article>  
+    </fieldset>  
+<!--     <canvas width="1024" height="512" id="max" style="border: 1px solid black;">  
+        您的浏览器不支持Canvas元素！  
+    </canvas>  -->   
+    <script> 
+    console.log(cubeList);
+    animate()
+    </script>        
+    <footer>  
+        <section>  
+            <h5>  
+                <span style="font-family: Arial, Helvetica, sans-serif;">HTML5 新元素--Canvas绘图元素</span>  
+            </h5>  
+        </section>  
+    </footer>
+</body>  
+</html>
